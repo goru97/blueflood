@@ -133,6 +133,7 @@ public class RollupHandler {
 
         if (Util.shouldUseESForUnits()) {
              unitsFuture = ESUnitExecutor.submit(new Callable() {
+
                  @Override
                  public List<SearchResult> call() throws Exception {
                      DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
