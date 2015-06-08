@@ -161,6 +161,8 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getSum();
+                else if (rollup instanceof CounterRollup)
+                    return ((CounterRollup) rollup).getCount();
                 else
                     // every other type.
                     throw new Exception(String.format("sum not supported for this type: %s", rollup.getClass().getSimpleName()));
