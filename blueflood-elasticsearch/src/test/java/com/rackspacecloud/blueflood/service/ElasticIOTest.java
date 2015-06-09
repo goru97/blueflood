@@ -102,7 +102,9 @@ public class ElasticIOTest {
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
@@ -218,7 +220,7 @@ public class ElasticIOTest {
     }
 
     @Test
-    public void testWildCardSearch() throws Exception {
+    public void testGlobMatching2() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0?.fourA.five0");
         List<SearchResult> results2 = elasticIO.search(TENANT_A, "one.two.three0[0-9].fourA.five0");
         Assert.assertEquals(10, results.size());
@@ -226,6 +228,15 @@ public class ElasticIOTest {
             Assert.assertTrue(result.getMetricName().startsWith("one.two.three"));
             Assert.assertEquals(result.getTenantId(), TENANT_A);
             results2.contains(result);
+        }
+    }
+
+    @Test
+    public void testGlobMatching3() throws Exception {
+        List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0[01].fourA.five0");
+        Assert.assertEquals(2, results.size());
+        for (SearchResult result : results) {
+            Assert.assertTrue(result.getMetricName().equals("one.two.three00.fourA.five0") || result.getMetricName().equals("one.two.three01.fourA.five0"));
         }
     }
 }
