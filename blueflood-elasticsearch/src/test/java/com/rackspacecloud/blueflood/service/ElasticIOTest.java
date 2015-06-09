@@ -102,9 +102,7 @@ public class ElasticIOTest {
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
