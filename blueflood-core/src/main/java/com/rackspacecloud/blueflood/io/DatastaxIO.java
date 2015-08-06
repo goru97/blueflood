@@ -22,7 +22,7 @@ public class DatastaxIO {
         final Cluster cluster = Cluster.builder()
                 .withLoadBalancingPolicy(new DCAwareRoundRobinPolicy("datacenter1"))
                 .withPoolingOptions(getPoolingOptions())
-                .addContactPoints(config.getStringProperty(CoreConfig.CASSANDRA_HOSTS))
+                .addContactPoints("10.184.1.239")
                 .withPort(9042) //TODO: Change default port in blueflood configuration to 9042 and pass here.
                 .build();
         final Metadata metadata = cluster.getMetadata();
