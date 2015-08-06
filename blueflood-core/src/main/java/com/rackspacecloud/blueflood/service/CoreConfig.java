@@ -20,7 +20,7 @@ package com.rackspacecloud.blueflood.service;
  * Default config values for blueflood-core. Also to be used for getting config key names.
  */
 public enum CoreConfig implements ConfigDefaults {
-    CASSANDRA_HOSTS("127.0.0.1:19180"),
+    CASSANDRA_HOSTS("127.0.0.1:9042, 10.0.0.1:9160"),
     DEFAULT_CASSANDRA_PORT("19180"),
     // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
     MAX_CASSANDRA_CONNECTIONS("75"),

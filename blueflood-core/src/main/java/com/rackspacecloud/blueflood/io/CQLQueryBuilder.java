@@ -22,13 +22,11 @@ public final class CQLQueryBuilder{
         Insert insertLocator = QueryBuilder
                 .insertInto(keyspace, CassandraModel.CF_METRICS_LOCATOR.getName())
                 .value("key", shard)
-                .value("column1", locator);
-        if(ttl != 0){
-            Insert.Options options =  insertLocator.using(QueryBuilder.ttl(ttl));
-            batch.add(insertLocator).add(options);
-        }
-        else
-            batch.add(insertLocator);
+                .value("column1", locator.toString())
+                .value("value", "");
+        if(ttl != 0)
+            insertLocator.using(QueryBuilder.ttl(ttl));
+        batch.add(insertLocator);
         return batch;
     }
 
@@ -40,22 +38,22 @@ public final class CQLQueryBuilder{
                 .value("column1", metric.getCollectionTime())
                 .value("value", persist);
 
-        Insert.Options options =  insertString.using(QueryBuilder.ttl(ttl));
-        batch.add(insertString).add(options);
+        insertString.using(QueryBuilder.ttl(ttl));
+        batch.add(insertString);
         return batch;
     }
     public static Batch addMetric(Metric metric, Batch batch){
 
         int ttl = metric.getTtlInSeconds();
-        ByteBuffer serializedMetricValue = DatastaxSerializer.RawSerializer.serialize(metric.getMetricValue());
+        ByteBuffer serializedMetricValue = DatastaxSerializer.RawSerializer.serialize(Double.valueOf((Integer) metric.getMetricValue()));
         Insert insertMetric = QueryBuilder
                 .insertInto(keyspace, CassandraModel.CF_METRICS_FULL.getName())
-                .value("key", metric.getLocator())
+                .value("key", metric.getLocator().toString())
                 .value("column1", metric.getCollectionTime())
                 .value("value", serializedMetricValue);
 
-        Insert.Options options =  insertMetric.using(QueryBuilder.ttl(ttl));
-        batch.add(insertMetric).add(options);
+        insertMetric.using(QueryBuilder.ttl(ttl));
+        batch.add(insertMetric);
         return batch;
     }
 

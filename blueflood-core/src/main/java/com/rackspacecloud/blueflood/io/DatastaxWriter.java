@@ -107,7 +107,6 @@ public class DatastaxWriter extends DatastaxIO{
     }
 
     private void insertMetric(Metric metric, Batch fullMetricsBatch) {
-        //TODO: Insert Metric query to batch query using query builder
         final boolean isString = metric.isString();
         final boolean isBoolean = metric.isBoolean();
 
