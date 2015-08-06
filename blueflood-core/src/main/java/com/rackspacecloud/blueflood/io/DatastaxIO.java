@@ -2,23 +2,28 @@ package com.rackspacecloud.blueflood.io;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
-
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class DatastaxIO {
-    private Cluster cluster;
-    private Session session;
-    private PoolingOptions poolingOptions;
+    private static Session session;
+    protected static final Configuration config = Configuration.getInstance();
 
-    public void connect(final String node, final int port)
+    static {
+        connect();
+    }
+    protected DatastaxIO() {
+    }
+    private static void connect()
     {
-        this.cluster = Cluster.builder()
+        final Cluster cluster = Cluster.builder()
                 .withLoadBalancingPolicy(new DCAwareRoundRobinPolicy("datacenter1"))
                 .withPoolingOptions(getPoolingOptions())
-                .addContactPoint(node)
-                .withPort(port)
+                .addContactPoints(config.getStringProperty(CoreConfig.CASSANDRA_HOSTS))
+                .withPort(9042) //TODO: Change default port in blueflood configuration to 9042 and pass here.
                 .build();
         final Metadata metadata = cluster.getMetadata();
         System.out.printf("Connected to cluster: %s\n", metadata.getClusterName());
@@ -30,8 +35,8 @@ public class DatastaxIO {
         session = cluster.connect();
     }
 
-    private PoolingOptions getPoolingOptions(){
-        poolingOptions = new PoolingOptions();
+    private static PoolingOptions getPoolingOptions(){
+        final PoolingOptions poolingOptions = new PoolingOptions();
         poolingOptions
                 .setCoreConnectionsPerHost(HostDistance.LOCAL,  4)
                 .setMaxConnectionsPerHost(HostDistance.LOCAL, 10)
@@ -59,21 +64,5 @@ public class DatastaxIO {
 
     protected Session getSession() {
         return session;
-    }
-
-    public void close() {
-        cluster.close();
-    }
-
-    //TODO: Remove this method after successful tests
-    public static void main(final String[] args) {
-        final DatastaxIO client = new DatastaxIO();
-        final String ipAddress = args.length > 0 ? args[0] : "localhost";
-        final int port = args.length > 1 ? Integer.parseInt(args[1]) : 9042;
-        System.out.println("Connecting to IP Address " + ipAddress + ":" + port + "...");
-        client.connect(ipAddress, port);
-        //client.monitorConnection();
-        client.getSession().execute(CQLQueryBuilder.addDummyMetric());
-        client.close();
     }
 }

@@ -64,7 +64,7 @@ public final class CQLQueryBuilder{
 
         Batch batch = getFullMetricsBatch();
         int ttl = 30;
-        ByteBuffer serializedMetricValue = DatastaxSerializer.RawSerializer.serialize(97);
+        ByteBuffer serializedMetricValue = DatastaxSerializer.RawSerializer.serialize(Double.valueOf(97));
         Insert insertMetric = QueryBuilder
                 .insertInto(keyspace, CassandraModel.CF_METRICS_FULL.getName())
                 .value("key", "15581.int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.99")
