@@ -18,26 +18,12 @@ script:
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
-before_deploy:
-  - git config --global user.email "builds@travis-ci.com"
-  - git config --global user.name "Travis CI"
-  - export GIT_TAG=$TRAVIS_BRANCH-v0.1.$TRAVIS_BUILD_NUMBER
-  - git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
-  - git push -q https://a6b022145171db0abb1eb5c703dabd4f529d42c7@github.com/goru97/blueflood --tags
-
 deploy:
   skip_cleanup: true
   provider: releases
-  api_key:
-    secure: [redacted]
+  api_key: a6b022145171db0abb1eb5c703dabd4f529d42c7
   file:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
   on:
     tags: false
     branch: release
-
-notifications:
-  irc: "irc.freenode.net#blueflood"
-  email:
-    recepients:
-      - blueflood-discuss@googlegroups.com
