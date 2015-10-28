@@ -18,10 +18,18 @@ script:
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+  - export GIT_TAG=$TRAVIS_BRANCH-v0.1.$TRAVIS_BUILD_NUMBER
+  - git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
+  - git push -q https://$TAGPERM@github.com/goru97/blueflood --tags
+
 deploy:
   skip_cleanup: true
   provider: releases
-  api_key: a6b022145171db0abb1eb5c703dabd4f529d42c7
+  api_key: 
+    secure: "br9Zc1bZtOL4AZ5UZsuB2LwJcAd9dgEdyPD+CMUDb3G6UvcQ+PG14+eB+rfp3/UXAK3UeemMBcm6DEBdTXtNJJKQBdE3HgFRt9rMd8IJHzFPf70WVcrVTWwx2WQB0JGUJiTLkBTHW4gOXEjS1SCEbmSIsDAt0LjP9ESUqEw4UVXSNK31qrZgGskaNhLs1T0UJFJzp6FwJ0WOyzkY8sxZxJyywo+8bvSAM7zkSzn0KXd/SEPoikilBZdLRq9AKgAtpAAGms9q0f1JH9/PxJ7BoNjUnLvvhdOxAcXssQuiJZVBS5CzKKs65/xFZxBcaFwYPQpc8Q5k54tHwmU5JLg8re5uBdjhOJ9njQ5hldx5oriU/VkDbIYR/bQqN378inwb72NShD0mH10ofoLK0jPXD8titMFbbqQSEoOpkp/6vIqPfwdM0yi5lsasU1pnhZ0xqDZWtYNsG+D5OdyIfVbjd5JAUJCRPMpGXuckWheV9NDjLIXpZ9rSzufy7jeRR7OFr24/yJnxGtEYdNN/Fjw4Cv6wO/eND4GC43Pu3brwXQJHLrtItousNlOUDEoh1NMbgFLm0eqsCq8I9o0oLm0VtTDCGH7Yi7g2gMFLiaTw+ZpztPN/gF+hbtMR556tpd7wXHSngy52HxAFJ52XjoxnxAP3vp1c6cXPDCQv69D4WIM="
   file:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
   on:
