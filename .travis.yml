@@ -33,7 +33,7 @@ deploy:
   file:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
   on:
-    tags: true
+    tags:false 
     branch: release
 
 notifications:
