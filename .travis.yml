@@ -18,8 +18,7 @@ script:
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
-before_deploy:
-  - git fetch --tags
+before_deploy: "echo 'ready to deploy?'"
 
 deploy:
   skip_cleanup: true
@@ -31,5 +30,4 @@ deploy:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
   on:
     repo: goru97/blueflood
-    tags: false
     branch: release
