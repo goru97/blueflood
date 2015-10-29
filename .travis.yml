@@ -15,6 +15,11 @@ install:
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
+after_script:
+- test $TRAVIS_PULL_REQUEST = false \
+  && echo "not a pull request" \
+  && git push \
+  
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
