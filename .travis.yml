@@ -18,6 +18,8 @@ script:
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
+before_deploy: "git fetch --tags"
+
 deploy:
   skip_cleanup: true
   provider: releases
