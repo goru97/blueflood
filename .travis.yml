@@ -15,11 +15,6 @@ install:
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
-after_script:
-- test $TRAVIS_PULL_REQUEST = false \
-  && echo "not a pull request" \
-  && git push \
-  
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
@@ -29,6 +24,7 @@ before_deploy:
   - export GIT_TAG=$TRAVIS_BRANCH-v0.1.$TRAVIS_BUILD_NUMBER
   - git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
   - git push -q https://$API_KEY@github.com/goru97/blueflood --tags
+  - git fetch --tags
 
 deploy:
   skip_cleanup: true
