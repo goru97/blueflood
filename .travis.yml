@@ -32,6 +32,3 @@ deploy:
     repo: goru97/blueflood
     tags: false
     branch: release
-env:
-  global:
-    secure: La2McyaeP+UU4uBmyW4c+BsijmoTf6cBMp2uI7TVNRCkV4s5noCkCgk2msrq7pOwI52Zyn1IzM0aL549i9IaPI/o9KFxIN4euHhNm4/J5CV2KyT3+455kSaPsfzI2U8+2RpyzmvBV1awh0Fzvij+KStUAEUl3WKV7CWoxws1p7v92pZ4l11uOrExY+/WGha1zCgpeSlR8tE9gOxHcXWxFjL8fOyg01+32eREL8wejuTmuUZsrbbGLa3aHad+nqaH4oFmrduitWhrrCO33ckj18qEtaCQTLfFN7EC+rdTFyAytlg5r/jTsEWipRxcy0pf4JPWyTsyndjD/hlhcEACOTfPSh+kgOUv2T8TUBjPnbpNmAFlKQOgFtri8Qi7Eu+2HEH1Fvk2eOtgigef9O+//cHlJWnRcD4Fc/PvGLN3BbEkLwWv9ik/iJelomnUSCB9aO6kqrUL6RuG+RYR3eInb5q0oFfwKsCfmeelC/pYbIJDVlYEBQEQraaD8xewtmPhnN30NrmlnPAJDwmPRyRWgE8kgoLwuoLuLVcaKyScUntmZB13Y3zC/yri0vMwlpXt8FcOfNqSLBLZzDv85W9DVqdVvw8iaQS3bEKfFG7o/8MUuwxKzBfqJttkrbEAbBI6SKEh4dyK6U2hcGnrBvYt6gtoriSlfVzZicGwRvj5Q7c=
