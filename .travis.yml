@@ -30,5 +30,5 @@ deploy:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
   on:
     repo: goru97/blueflood
-    tags: false
+    tags: true
     branch: release
