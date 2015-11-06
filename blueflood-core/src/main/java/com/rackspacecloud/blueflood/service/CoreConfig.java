@@ -32,6 +32,7 @@ public enum CoreConfig implements ConfigDefaults {
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
+    EVENTS_MODULES(""),
 
     MAX_LOCATOR_FETCH_THREADS("2"),
     MAX_ROLLUP_READ_THREADS("20"),
@@ -145,7 +146,9 @@ public enum CoreConfig implements ConfigDefaults {
     // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
     ES_UNIT_THREADS("50"),
     ROLLUP_ON_READ_THREADS("50"),
-    TURN_OFF_RR_MPLOT("false");
+    TURN_OFF_RR_MPLOT("false"),
+
+    DELAYED_METRICS_MILLIS("300000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

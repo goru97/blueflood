@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -27,18 +28,20 @@ import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.tracker.Tracker;
+import com.rackspacecloud.blueflood.tracker.TrackerMBean;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
@@ -64,38 +67,54 @@ public class HttpMetricsIngestionServer {
     private int httpIngestPort;
     private String httpIngestHost;
     private Processor processor;
+    private HttpEventsIngestionHandler httpEventsIngestionHandler;
 
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
-    
+
+    private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
+
+    public TrackerMBean tracker;
+
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.processor = new Processor(context, writer, timeout);
+    }
+
+    public void startServer() {
+        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
+        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(processor, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpAggregatedIngestionHandler(processor, timeout));
 
         router.get("/v2.0", new DefaultHandler());
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpAggregatedIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
+        router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        ServerBootstrap server = new ServerBootstrap(
+        ChannelFactory channelFactory =
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
+                        Executors.newFixedThreadPool(workerThreads));
+        ServerBootstrap server = new ServerBootstrap(channelFactory);
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        allOpenChannels.add(serverChannel);
+
+        log.info("Starting tracker service");
+        tracker = new Tracker();
     }
+
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
         private RouteMatcher router;
@@ -127,6 +146,20 @@ public class HttpMetricsIngestionServer {
             return pipeline;
         }
     }
+
+    private HttpEventsIngestionHandler getHttpEventsIngestionHandler() {
+        if (this.httpEventsIngestionHandler == null) {
+            this.httpEventsIngestionHandler = new HttpEventsIngestionHandler((EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES));
+        }
+
+        return this.httpEventsIngestionHandler;
+    }
+
+    @VisibleForTesting
+    public void setHttpEventsIngestionHandler(HttpEventsIngestionHandler httpEventsIngestionHandler) {
+        this.httpEventsIngestionHandler = httpEventsIngestionHandler;
+    }
+
     static class Processor {
         private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
         private static int WRITE_THREADS = 
@@ -195,6 +228,15 @@ public class HttpMetricsIngestionServer {
             List<List<IMetric>> batches = collection.splitMetricsIntoBatches(BATCH_SIZE);
             discoveryWriter.apply(batches);
             return batchWriter.apply(batches);
+        }
+    }
+
+    @VisibleForTesting
+    public void shutdownServer() {
+        try {
+            allOpenChannels.close().await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Pass
         }
     }
 }

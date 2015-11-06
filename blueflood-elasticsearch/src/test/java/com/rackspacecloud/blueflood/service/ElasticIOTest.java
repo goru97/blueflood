@@ -88,7 +88,7 @@ public class ElasticIOTest {
     private static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
         List<IMetric> metrics = new ArrayList<IMetric>();
-        CounterRollup counter = new CounterRollup();
+        BluefloodCounterRollup counter = new BluefloodCounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
@@ -238,5 +238,35 @@ public class ElasticIOTest {
         for (SearchResult result : results) {
             Assert.assertTrue(result.getMetricName().equals("one.two.three00.fourA.five0") || result.getMetricName().equals("one.two.three01.fourA.five0"));
         }
+    }
+
+    @Test
+    public void testDeDupMetrics() throws Exception {
+        // New index name and the locator to be written to it
+        String ES_DUP = ElasticIO.INDEX_NAME_WRITE + "_2";
+        Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
+        // Metric is aleady there in old
+        List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
+        Assert.assertEquals(results.size(), 1);
+        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        // Actually create the new index
+        esSetup.execute(EsSetup.createIndex(ES_DUP)
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping_v1.json")));
+        // Insert metric into the new index
+        elasticIO.setINDEX_NAME_WRITE(ES_DUP);
+        ArrayList metricList = new ArrayList();
+        metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
+        elasticIO.insertDiscovery(metricList);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        // Set up aliases
+        esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
+                .addAlias(ElasticIO.INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+        elasticIO.setINDEX_NAME_READ("metric_metadata_read");
+        results = elasticIO.search(TENANT_A, testLocator.getMetricName());
+        // Should just be one result
+        Assert.assertEquals(results.size(), 1);
+        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        elasticIO.setINDEX_NAME_READ(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ.getDefaultValue());
+        elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
 }
