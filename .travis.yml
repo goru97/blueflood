@@ -37,3 +37,4 @@ deploy:
     repo: goru97/blueflood
     tags: false
     branch: release
+    jdk: oraclejdk7
